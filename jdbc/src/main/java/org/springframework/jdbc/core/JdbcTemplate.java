@@ -24,12 +24,20 @@ public class JdbcTemplate {
     }
 
     public void update(final String sql, final Object... elements) {
+        execute(sql, PreparedStatement::execute, elements);
+    }
+
+    private <T> T execute(
+            final String sql,
+            final PreparedStatementExecutor<T> executor,
+            final Object... elements
+    ) {
         try (final Connection connection = dataSource.getConnection();
              final PreparedStatement preparedStatement = connection.prepareStatement(sql)
         ) {
             setElements(elements, preparedStatement);
 
-            preparedStatement.executeUpdate();
+            return executor.action(preparedStatement);
         } catch (final SQLException e) {
             log.error(e.getMessage(), e);
             throw new DataAccessException(e);
