@@ -55,19 +55,15 @@ public class JdbcTemplate {
             final String sql,
             final Object... elements
     ) {
-        try (final Connection connection = dataSource.getConnection();
-             final PreparedStatement preparedStatement = connection.prepareStatement(sql)
-        ) {
-            setElements(elements, preparedStatement);
-            final ResultSet resultSet = preparedStatement.executeQuery();
+        return execute(sql, preparedStatement -> createResult(preparedStatement, rowMapper), elements);
+    }
 
+    private <T> Optional<T> createResult(final PreparedStatement preparedStatement, final RowMapper<T> rowMapper) throws SQLException {
+        try (final ResultSet resultSet = preparedStatement.executeQuery()) {
             if (resultSet.next()) {
                 return Optional.of(rowMapper.mapRow(resultSet));
             }
             return Optional.empty();
-        } catch (final SQLException e) {
-            log.error(e.getMessage(), e);
-            throw new DataAccessException(e);
         }
     }
 
@@ -76,20 +72,16 @@ public class JdbcTemplate {
             final String sql,
             final Object... elements
     ) {
-        try (final Connection connection = dataSource.getConnection();
-             final PreparedStatement preparedStatement = connection.prepareStatement(sql)
-        ) {
-            setElements(elements, preparedStatement);
-            final ResultSet resultSet = preparedStatement.executeQuery();
+        return execute(sql, preparedStatement -> createResults(preparedStatement, rowMapper), elements);
+    }
 
+    private <T> List<T> createResults(final PreparedStatement preparedStatement, final RowMapper<T> rowMapper) throws SQLException {
+        try (final ResultSet resultSet = preparedStatement.executeQuery()) {
             final List<T> results = new ArrayList<>();
             while (resultSet.next()) {
                 results.add(rowMapper.mapRow(resultSet));
             }
             return results;
-        } catch (final SQLException e) {
-            log.error(e.getMessage(), e);
-            throw new DataAccessException(e);
         }
     }
 
